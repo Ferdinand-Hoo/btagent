@@ -29,7 +29,6 @@ def main():
     parser.add_argument('-o', '--output', help='输出路径')
     parser.add_argument('-f', '--format', choices=['markdown', 'json'], default='markdown')
     parser.add_argument('-n', '--max-records', type=int, default=0, help='最多解析条数，0=不限制')
-    parser.add_argument('--vendor-type-map', action='store_true', help='Elisys/车机: flags 2=ACL_TX, 1=SCO_TX')
 
     args = parser.parse_args()
 
@@ -38,8 +37,8 @@ def main():
         sys.exit(1)
 
     try:
-        print(f"Parsing: {args.input}" + (" (vendor type map)" if args.vendor_type_map else ""))
-        p = BTSnoopParser(args.input, vendor_type_map=args.vendor_type_map)
+        print(f"Parsing: {args.input}")
+        p = BTSnoopParser(args.input)
         p.parse()
         print(f"Parsed {len(p.records)} records")
 

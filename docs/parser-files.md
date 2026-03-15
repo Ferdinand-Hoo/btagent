@@ -29,7 +29,7 @@
 ```
 main.py (CLI)
   ├─ argparse
-  ├─ BTSnoopParser(file_path, vendor_type_map)
+  ├─ BTSnoopParser(file_path)
   ├─ p.parse()                    → btsnoop.parse()
   ├─ p.export_markdown() / export_json()
   └─ p.analyze()
@@ -48,9 +48,9 @@ btsnoop.py
   │       └─ _parse_payload(record)   ──────────────────────────┐
   │                                                               │
   ├─ _parse_payload(record)  ◄────────────────────────────────────┘
-  │   ├─ flags==0     → parse_hci_command(payload)   [hci/command]
-  │   ├─ flags==3     → parse_hci_event(payload)      [hci/event]
-  │   ├─ flags==2/4/1 → parse_hci_acl(payload)        [hci/acl]  （视 vendor_type_map 与首字节）
+  │   ├─ flags==1     → parse_hci_command(payload)   [hci/command]
+  │   ├─ flags==4     → parse_hci_event(payload)      [hci/event]
+  │   ├─ flags==2     → parse_hci_acl(payload)        [hci/acl]
   │   └─ 其他         → {'raw_hex': ...}
   │
   ├─ export_markdown() / export_json()  使用 self.records

@@ -10,17 +10,20 @@ def parse_opcode(opcode_uint16: int) -> Tuple[int, int]:
     ocf = opcode_uint16 & 0x3FF
     return ogf, ocf
 
+# 包数据首字节：1=CMD, 2=ACL_DATA, 3=SCO_DATA, 4=EVENT
 HCI_TYPES = {
-    0: "SCO_TX", 1: "ACL_TX", 2: "CMD", 3: "EVT", 4: "ACL_RX", 5: "SCO_RX",
-}
-HCI_TYPES_VENDOR = {
-    0: "CMD", 1: "SCO_TX", 2: "ACL_TX", 3: "EVT", 4: "ACL_RX", 5: "SCO_RX",
+    1: "CMD",
+    2: "ACL_DATA",
+    3: "SCO_DATA",
+    4: "EVENT",
 }
 
 HCI_INDICATORS = {
-    0: 0x01, 1: 0x02, 2: 0x03, 3: 0x04, 4: 0x02, 5: 0x03,
+    1: 0x01,
+    2: 0x02,
+    3: 0x03,
+    4: 0x04,
 }
-HCI_INDICATORS_VENDOR = {0: 0x01, 1: 0x03, 2: 0x02, 3: 0x04, 4: 0x02, 5: 0x03}
 
 EVENT_INQUIRY_COMPLETE = 0x01
 EVENT_INQUIRY_RESULT = 0x02

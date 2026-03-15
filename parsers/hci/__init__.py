@@ -6,9 +6,7 @@ HCI 层解析：命令、事件、ACL。
 from .constants import (
     parse_opcode,
     HCI_TYPES,
-    HCI_TYPES_VENDOR,
     HCI_INDICATORS,
-    HCI_INDICATORS_VENDOR,
     HCI_COMMANDS,
     HCI_EVENTS,
     HCI_ERRORS,
@@ -26,9 +24,7 @@ from .acl import parse_hci_acl
 __all__ = [
     "parse_opcode",
     "HCI_TYPES",
-    "HCI_TYPES_VENDOR",
     "HCI_INDICATORS",
-    "HCI_INDICATORS_VENDOR",
     "HCI_COMMANDS",
     "HCI_EVENTS",
     "HCI_ERRORS",

@@ -19,8 +19,8 @@ description: Generates a git commit from the user's staged changes and writes a 
    - 按下方「提交信息格式」写出标题与可选正文
 
 3. **执行提交**
-   - 使用生成的 message 执行：`git commit -m "标题" -m "正文"`（正文可选）
-   - 或先输出建议的 message，待用户确认后再执行
+   - **默认行为**：只输出推荐的提交信息（标题 + 正文），**不主动执行 `git commit`**
+   - **仅当用户明确要求**「帮我提交 / 直接提交」时，才执行：`git commit -m "标题" -m "正文"`（正文可选）
 
 ## 提交信息格式（Conventional Commits）
 
@@ -69,3 +69,6 @@ refactor(hci): extract constants to constants module
 - 标题控制在约 50 字符内，正文每行约 72 字符换行
 - 从 diff 推断 type/scope，不臆造；若难以判断 scope 可省略
 - 若用户明确要求「只生成信息不提交」，则只输出 message，不执行 `git commit`
+- **标题语言要求**：`<short description>` 一律使用 **英文**（祈使句、现在时）
+- **正文语言要求**：正文一律使用 **中文** 描述变更内容与动机
+- **正文结构要求**：正文采用 **分点列举** 的形式，每个要点单独一行，以 `- ` 开头，突出不同类型的改动（例如解析逻辑、时间戳处理、文档更新等）
