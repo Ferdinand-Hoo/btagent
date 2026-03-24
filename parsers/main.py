@@ -15,9 +15,11 @@ if __name__ == '__main__':
         sys.path.insert(0, str(_root))
 
 try:
-    from parsers.btsnoop import BTSnoopParser, HCIRecord
+    from parsers.btsnoop import BTSnoopParser
+    from parsers.reporter import export_markdown, export_json
 except ImportError:
-    from .btsnoop import BTSnoopParser, HCIRecord
+    from .btsnoop import BTSnoopParser
+    from .reporter import export_markdown, export_json
 
 
 def main():
@@ -43,18 +45,18 @@ def main():
         print(f"Parsed {len(p.records)} records")
 
         base = Path(args.input).stem
-        out = args.output or f"{base}_parsed.{"md" if args.format == "markdown" else "json"}"
+        out = args.output or f"{base}_parsed.{'md' if args.format == 'markdown' else 'json'}"
         if args.format == 'markdown':
-            p.export_markdown(out, args.max_records)
+            export_markdown(p, out, args.max_records)
         else:
-            p.export_json(out, args.max_records)
+            export_json(p, out, args.max_records)
         print(f"Output: {out}")
 
         stats = p.analyze()
         print(f"  Packets: {stats['total_packets']} | Duration: {stats['duration_ms']:.2f} ms")
-        print(f"  Commands: {stats['commands']} | Events: {stats['events']} | ACL: {stats['acl_tx']}+{stats['acl_rx']}")
+        print(f"  Commands: {stats['commands']} | Events: {stats['events']} | ACL TX: {stats['acl_tx']} RX: {stats['acl_rx']}")
         print(f"  Command Completes: {len(stats['command_completes'])} | Errors: {stats['error_count']}")
-    except Exception as e:
+    except Exception:
         import traceback
         traceback.print_exc()
         sys.exit(1)

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pip install flask -q)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "Read(//usr/local/lib/**)",
+      "Read(//home/ferdinand/.local/bin/**)",
+      "Bash(apt list:*)",
+      "Read(//usr/lib/python3/dist-packages/**)",
+      "Bash(kill %1)"
+    ]
+  }
+}

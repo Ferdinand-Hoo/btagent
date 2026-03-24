@@ -6,11 +6,8 @@ HCI ACL 数据解析 (Host <-> Controller)。
 import struct
 from typing import Dict, Any
 
-# 延迟导入避免循环依赖；ACL 解析时再取 L2CAP
-def _get_l2cap():
-    from ..l2cap import parse_l2cap_payload
-    from ..l2cap.constants import L2CAP_CID_NAMES
-    return parse_l2cap_payload, L2CAP_CID_NAMES
+from ..l2cap import parse_l2cap_payload
+from ..l2cap.constants import L2CAP_CID_NAMES
 
 
 def parse_hci_acl(data: bytes) -> Dict[str, Any]:
@@ -46,7 +43,6 @@ def parse_hci_acl(data: bytes) -> Dict[str, Any]:
         cid = struct.unpack('<H', data[6:8])[0]
         l2cap_payload = data[8:8 + min(l2cap_len, len(data) - 8)]
 
-        parse_l2cap_payload_fn, L2CAP_CID_NAMES = _get_l2cap()
         cid_str = L2CAP_CID_NAMES.get(cid, f"Dynamic_CID_0x{cid:04X}")
 
         result['l2cap'] = {
@@ -58,7 +54,7 @@ def parse_hci_acl(data: bytes) -> Dict[str, Any]:
 
         # 按 CID 调用 L2CAP 层解析（信令 / ATT / 后续可扩展 SDP 等）
         try:
-            sub = parse_l2cap_payload_fn(cid, l2cap_payload)
+            sub = parse_l2cap_payload(cid, l2cap_payload)
             result['l2cap'].update(sub)
         except Exception:
             pass
