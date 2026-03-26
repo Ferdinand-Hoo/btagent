@@ -283,10 +283,11 @@ tbody td { padding: 9px 14px; color: var(--text); }
 
 /* ── 配对/折叠行 ── */
 .pair-summary {
-  cursor: pointer;
+  cursor: default;
   background: rgba(59,130,246,.05);
 }
-.pair-summary:hover { background: rgba(59,130,246,.13) !important; }
+.pair-summary:hover { background: rgba(59,130,246,.10) !important; }
+.pair-summary .expand-icon { cursor: pointer; }
 .pair-summary td:first-child { white-space: nowrap; }
 .expand-icon {
   display: inline-block;
@@ -449,7 +450,7 @@ function toggleDetails(did) {
 
 // ── 协议筛选 ──
 (function () {
-  const filterBtns = document.querySelectorAll('.filter-btn');
+  const filterBtns = document.querySelectorAll('.filter-btn:not(#btn-toggle-all)');
   const tbody = document.getElementById('flow-tbody');
   if (!tbody || !filterBtns.length) return;
 
@@ -462,38 +463,80 @@ function toggleDetails(did) {
       const allRows = tbody.querySelectorAll('tr:not(.details-row)');
       allRows.forEach(row => {
         if (filter === 'all') {
-          row.style.display = '';
+          if (row.classList.contains('pair-child')) {
+            // 还原到各组折叠状态，不强制展开
+            const gid = row.dataset.gid;
+            const icon = document.getElementById(`icon-${gid}`);
+            row.style.display = (icon && icon.classList.contains('open')) ? '' : 'none';
+          } else {
+            row.style.display = '';
+          }
         } else {
-          const app = row.dataset.app;
-          row.style.display = (app === filter) ? '' : 'none';
+          if (row.classList.contains('pair-child')) {
+            // 子行跟随父组过滤结果
+            const gid = row.dataset.gid;
+            const icon = document.getElementById(`icon-${gid}`);
+            const parentRow = tbody.querySelector(`tr.pair-summary[data-gid="${gid}"]`);
+            const parentVisible = !parentRow || parentRow.style.display !== 'none';
+            row.style.display = (parentVisible && icon && icon.classList.contains('open')) ? '' : 'none';
+          } else {
+            const app = row.dataset.app;
+            row.style.display = (app === filter) ? '' : 'none';
+          }
         }
       });
     });
   });
 })();
 
+// ── 全部折叠 / 展开 ──
+function toggleAllGroups() {
+  const btn = document.getElementById('btn-toggle-all');
+  const icons = document.querySelectorAll('.expand-icon');
+  const anyOpen = Array.from(icons).some(ic => ic.classList.contains('open'));
+  // anyOpen → 折叠全部；全部已折叠 → 展开全部
+  icons.forEach(icon => {
+    const gid = icon.id.replace('icon-', '');
+    const parentRow = document.querySelector(`tr.pair-summary[data-gid="${gid}"]`);
+    const parentVisible = !parentRow || parentRow.style.display !== 'none';
+    const children = document.querySelectorAll(`tr.pair-child[data-gid="${gid}"]`);
+    if (anyOpen) {
+      icon.classList.remove('open');
+      children.forEach(tr => { tr.style.display = 'none'; });
+    } else {
+      icon.classList.add('open');
+      children.forEach(tr => { tr.style.display = parentVisible ? '' : 'none'; });
+    }
+  });
+  btn.textContent = anyOpen ? '全部展开' : '全部折叠';
+}
+
 // ── 消息选择和时间差计算 ──
 let selectedRows = [];
 
 function handleRowClick(event, row) {
-  // 阻止事件冒泡到展开图标
+  // 展开图标本身由自身 onclick 处理，此处跳过
   if (event.target.classList.contains('expand-icon')) return;
+
+  // 可折叠摘要行：单击只做展开/折叠，不弹详情侧边栏
+  if (row.classList.contains('pair-summary')) {
+    const gid = row.dataset.gid;
+    if (gid) toggleGroup(gid);
+    return;
+  }
 
   const isCtrlPressed = event.ctrlKey || event.metaKey;
 
   if (!isCtrlPressed) {
-    // 不按 Ctrl：清除其他选中，只选中当前行
     selectedRows.forEach(r => r.classList.remove('selected'));
     selectedRows = [];
   }
 
-  // 切换当前行的选中状态
   if (row.classList.contains('selected')) {
     row.classList.remove('selected');
     selectedRows = selectedRows.filter(r => r !== row);
   } else {
     if (selectedRows.length >= 2) {
-      // 最多选中2行，移除第一个
       selectedRows[0].classList.remove('selected');
       selectedRows.shift();
     }
@@ -503,8 +546,19 @@ function handleRowClick(event, row) {
 
   updateTimeDiff();
 
-  // 显示详情侧边栏
-  showDetailSidebar(row);
+  // 多选时隐藏详情侧边栏（此时显示时间差，遮住会干扰）
+  if (selectedRows.length >= 2) {
+    closeDetailSidebar();
+    return;
+  }
+
+  // 单选：再次点击同一行则关闭，否则切换到新行
+  const sidebar = document.getElementById('detail-sidebar');
+  if (sidebar.classList.contains('open') && sidebar.dataset.activeSeq === row.dataset.seq) {
+    closeDetailSidebar();
+  } else {
+    showDetailSidebar(row);
+  }
 }
 
 function showDetailSidebar(row) {
@@ -516,12 +570,15 @@ function showDetailSidebar(row) {
   if (data) {
     const jsonStr = JSON.stringify(data, null, 2);
     content.innerHTML = `<pre>${jsonStr}</pre>`;
+    sidebar.dataset.activeSeq = seq;
     sidebar.classList.add('open');
   }
 }
 
 function closeDetailSidebar() {
-  document.getElementById('detail-sidebar').classList.remove('open');
+  const sidebar = document.getElementById('detail-sidebar');
+  sidebar.classList.remove('open');
+  delete sidebar.dataset.activeSeq;
 }
 
 function updateTimeDiff() {
@@ -587,8 +644,6 @@ def _html_sidebar(stats: dict) -> str:
         ("#overview",  "📊", "概览统计"),
         ("#fileinfo",  "📁", "文件信息"),
     ]
-    if stats["command_completes"]:
-        items.append(("#commands", "✅", "Command Complete"))
     if stats["connections_established"] or stats["connections_disconnected"]:
         items.append(("#connections", "🔗", "连接事件"))
     if stats["errors"]:
@@ -956,7 +1011,7 @@ def _html_flow_table(records) -> str:
 
             # 摘要行（Command）
             rows += (
-                f"<tr class='pair-summary selectable-row' data-gid='{gid}' data-app='{app}' data-time='{cmd_rec.timestamp_rel}' data-seq='{cmd_rec.seq}' onclick='handleRowClick(event, this)' ondblclick='toggleGroup(\"{gid}\")'>"
+                f"<tr class='pair-summary selectable-row' data-gid='{gid}' data-app='{app}' data-time='{cmd_rec.timestamp_rel}' data-seq='{cmd_rec.seq}' onclick='handleRowClick(event, this)'>"
                 f"<td style='color:var(--text-muted);white-space:nowrap'>"
                 f"  <span class='expand-icon' id='icon-{gid}' onclick='event.stopPropagation(); toggleGroup(\"{gid}\")''>▶</span> "
                 f"  {cmd_rec.seq}…{resp_rec.seq}"
@@ -1033,17 +1088,20 @@ def _html_flow_table(records) -> str:
         '      <button class="filter-btn" data-filter="ATT">ATT</button>'
         '      <button class="filter-btn" data-filter="SDP">SDP</button>'
         '    </div>'
-        '    <div class="time-diff-display" id="time-diff" style="display:none">'
+        '    <div style="display:flex;align-items:center;gap:8px">'
+        '      <button id="btn-toggle-all" class="filter-btn" onclick="toggleAllGroups()">全部展开</button>'
+        '      <div class="time-diff-display" id="time-diff" style="display:none">'
         '      <span style="color:var(--text-muted)">时间差:</span> '
         '      <span id="time-diff-value" style="font-weight:600;color:var(--green)">0.00 ms</span>'
-        '      <button onclick="clearSelection()" style="margin-left:8px;padding:2px 8px;font-size:0.85rem">清除</button>'
+        '        <button onclick="clearSelection()" style="margin-left:8px;padding:2px 8px;font-size:0.85rem">清除</button>'
+        '      </div>'
         '    </div>'
         '  </div>'
         '  <div class="pager">'
         '    <button id="btn-prev">← 上一页</button>'
         '    <span id="page-info"></span>'
         '    <button id="btn-next">下一页 →</button>'
-        '    <span style="color:var(--text-muted)">每页 100 条 &nbsp;|&nbsp; 点击配对行可展开</span>'
+        '    <span style="color:var(--text-muted)">每页 100 条 &nbsp;|&nbsp; 点击配对组展开，点击子行查看详情</span>'
         '  </div>'
         '  <div class="tbl-wrap">'
         '    <table class="flow-tbl">'
@@ -1111,7 +1169,7 @@ def build_html(parser, max_records: int = 0) -> str:
     body = (
         _html_stats(stats)
         + _html_fileinfo(parser, stats)
-        + _html_command_completes(stats)
+
         + _html_connections(stats)
         + _html_errors(stats)
         + _html_flow_table(records)
